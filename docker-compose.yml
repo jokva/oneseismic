@@ -1,5 +1,35 @@
 version: '3.0'
 services:
+  session:
+    build:
+      context: .
+      dockerfile: core/Dockerfile
+    environment:
+      - AZ_BLOB_ACCOUNT
+      - AZ_BLOB_KEY
+  fragment:
+    build:
+      context: .
+      dockerfile: core/fragment.dockerfile
+    environment:
+      - AZ_BLOB_ACCOUNT
+      - AZ_BLOB_KEY
+      - ONESEISMIC_MANIFEST_ADDRESS="which protocol? tcp://manifest:which_port?"
+      - ONESEISMIC_SESSION_ADDRESS="which protocol? tcp://session:50051"
+      - ONESEISMIC_FAIL_ADDRESS="which protocol, address and port?"
+    depends_on:
+      - session
+  manifest:
+    build:
+      context: .
+      dockerfile: core/manifest.dockerfile
+    environment:
+      - AZ_BLOB_ACCOUNT
+      - AZ_BLOB_KEY
+      - ONESEISMIC_SESSION_ADDRESS="tcp://session:50051"
+      - ONESEISMIC_FAIL_ADDRESS="which protocol, address and port?"
+    depends_on:
+      - session
   api:
     image: lambdaville.azurecr.io/api:${VERSION:-latest}
     build:
@@ -17,3 +47,6 @@ services:
       - AZURE_STORAGE_ACCESS_KEY
       - AZURE_MANIFEST_CONTAINER
       - PROFILING=false
+    depends_on:
+      - fragment
+      - manifest
